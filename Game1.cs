@@ -5,8 +5,8 @@ using System;
 using System.IO;
 using ImGuiNET;
 using MgCoreEditor.Engine;
+using MgCoreEditor.Engine.Input;
 using MgCoreEditor.ImGUI;
-using Shared.Engine.Input;
 using XNA3DGizmoExample;
 using Num = System.Numerics;
 
@@ -51,14 +51,15 @@ namespace MgCoreEditor
             IsMouseVisible = true;
         }
 
-        public Camera Camera { get; set; }
+        public IEditorCamera Camera { get; set; }
 
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
             _imGuiRenderer = new ImGuiRenderer(this);
             _imGuiRenderer.RebuildFontAtlas();
-            Camera = new Camera(new Vector3(0, 5, -15), Vector3.Zero);
+            SetupDarkStyle();
+            Camera = new PerspectiveCamera(new Vector3(-10, 5, -15), Vector3.Zero);
             _renderer = new Renderer.Renderer(Camera);
             CurrentFolder = AppContext.BaseDirectory;
             base.Initialize();
@@ -119,6 +120,8 @@ namespace MgCoreEditor
 
         protected virtual void ImGuiLayout()
         {
+            ImguiExample();
+
             if (ImGui.BeginMainMenuBar())
             {
                 if (ImGui.BeginMenu("File"))
@@ -152,7 +155,7 @@ namespace MgCoreEditor
                 ImGui.EndMainMenuBar();
             }
 
-            if (_menuAction == "SaveAs")
+            if (_menuAction == "Open")
             {
 
                 bool result = false;
@@ -161,26 +164,48 @@ namespace MgCoreEditor
                 ImGui.OpenPopup(FilePickerID);
             }
 
-            //if (ImGui.BeginPopupModal(FilePickerID, ref _fopen, ImGuiWindowFlags.NoTitleBar) )
             if (ImGui.BeginPopupModal(FilePickerID))
             {
                 var result = DrawFolder(ref selected, true);
 
-                //int i_id = 1;
-                //ImGui.InputInt("ID", ref i_id);
-                //if (ImGui.Button("Save"))
-                //{
-                //    ImGui.CloseCurrentPopup();
-                //    _menuAction = String.Empty;
-                //}
-                //ImGui.SameLine();
-                //if (ImGui.Button("Cancel"))
-                //{
-                //    ImGui.CloseCurrentPopup();
-                //    _menuAction = String.Empty;
-                //}
-
                 ImGui.EndPopup();
+            }
+        }
+
+        private void ImguiExample()
+        {
+            // 1. Show a simple window
+            // Tip: if we don't call ImGui.Begin()/ImGui.End() the widgets appears in a window automatically called "Debug"
+            {
+                ImGui.Text("Hello, world!");
+                ImGui.SliderFloat("float", ref f, 0.0f, 1.0f, string.Empty, 1f);
+                ImGui.ColorEdit3("clear color", ref clear_color);
+                if (ImGui.Button("Test Window")) show_test_window = !show_test_window;
+                if (ImGui.Button("Another Window")) show_another_window = !show_another_window;
+                ImGui.Text(string.Format("Application average {0:F3} ms/frame ({1:F1} FPS)", 1000f / ImGui.GetIO().Framerate,
+                    ImGui.GetIO().Framerate));
+
+                ImGui.InputText("Text input", _textBuffer, 100);
+
+                ImGui.Text("Texture sample");
+                ImGui.Image(_imGuiTexture, new Num.Vector2(300, 150), Num.Vector2.Zero, Num.Vector2.One, Num.Vector4.One,
+                    Num.Vector4.One); // Here, the previously loaded texture is used
+            }
+
+            // 2. Show another simple window, this time using an explicit Begin/End pair
+            if (show_another_window)
+            {
+                ImGui.SetNextWindowSize(new Num.Vector2(200, 100), ImGuiCond.FirstUseEver);
+                ImGui.Begin("Another Window", ref show_another_window);
+                ImGui.Text("Hello");
+                ImGui.End();
+            }
+
+            // 3. Show the ImGui test window. Most of the sample code is in ImGui.ShowTestWindow()
+            if (show_test_window)
+            {
+                ImGui.SetNextWindowPos(new Num.Vector2(650, 20), ImGuiCond.FirstUseEver);
+                ImGui.ShowDemoWindow(ref show_test_window);
             }
         }
 
@@ -288,6 +313,176 @@ namespace MgCoreEditor
             stream.Position = 0;
 
             return stream;
+        }
+
+        private void SetupDarkStyle()
+        {
+            ImGuiStylePtr style = ImGui.GetStyle();
+            RangeAccessor<System.Numerics.Vector4> colors = style.Colors;
+
+            //ImGuiCol_Text            
+            //colors[0] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 1.000f));
+            //ImGuiCol_TextDisabled
+            //colors[1] = new System.Numerics.Vector4(0.500f, 0.500f, 0.500f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TextDisabled, new System.Numerics.Vector4(0.500f, 0.500f, 0.500f, 1.000f));
+            //ImGuiCol_WindowBg
+            //colors[2] = new System.Numerics.Vector4(0.180f, 0.180f, 0.180f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, new System.Numerics.Vector4(0.180f, 0.180f, 0.180f, 1.000f));
+            //ImGuiCol_ChildBg
+            //colors[3] = new System.Numerics.Vector4(0.280f, 0.280f, 0.280f, 0.000f);
+            ImGui.PushStyleColor(ImGuiCol.ChildBg, new System.Numerics.Vector4(0.280f, 0.280f, 0.280f, 0.000f));
+            //ImGuiCol_PopupBg
+            //colors[4] = new System.Numerics.Vector4(0.313f, 0.313f, 0.313f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.PopupBg, new System.Numerics.Vector4(0.313f, 0.313f, 0.313f, 1.000f));
+            //ImGuiCol_Border
+            //colors[5] = new System.Numerics.Vector4(0.266f, 0.266f, 0.266f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.Border, new System.Numerics.Vector4(0.266f, 0.266f, 0.266f, 1.000f));
+            //ImGuiCol_BorderShadow
+            //colors[6] = new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.000f);
+            ImGui.PushStyleColor(ImGuiCol.BorderShadow, new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.000f));
+            //ImGuiCol_FrameBg
+            //colors[7] = new System.Numerics.Vector4(0.160f, 0.160f, 0.160f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, new System.Numerics.Vector4(0.160f, 0.160f, 0.160f, 1.000f));
+            //ImGuiCol_FrameBgHovered
+            //colors[8] = new System.Numerics.Vector4(0.200f, 0.200f, 0.200f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new System.Numerics.Vector4(0.200f, 0.200f, 0.200f, 1.000f));
+            //ImGuiCol_FrameBgActive
+            //colors[9] = new System.Numerics.Vector4(0.280f, 0.280f, 0.280f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.FrameBgActive, new System.Numerics.Vector4(0.280f, 0.280f, 0.280f, 1.000f));
+            //ImGuiCol_TitleBg
+            //colors[10] = new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TitleBg, new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f));
+            //ImGuiCol_TitleBgActive
+            //colors[11] = new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f));
+            //ImGuiCol_TitleBgCollapsed
+            //colors[12] = new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TitleBgCollapsed, new System.Numerics.Vector4(0.148f, 0.148f, 0.148f, 1.000f));
+            //ImGuiCol_MenuBarBg
+            //colors[13] = new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.MenuBarBg, new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f));
+            //ImGuiCol_ScrollbarBg
+            //colors[14] = new System.Numerics.Vector4(0.160f, 0.160f, 0.160f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, new System.Numerics.Vector4(0.160f, 0.160f, 0.160f, 1.000f));
+            //ImGuiCol_ScrollbarGrab
+            //colors[15] = new System.Numerics.Vector4(0.277f, 0.277f, 0.277f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.ScrollbarBg, new System.Numerics.Vector4(0.277f, 0.277f, 0.277f, 1.000f));
+            //ImGuiCol_ScrollbarGrabHovered
+            //colors[16] = new System.Numerics.Vector4(0.300f, 0.300f, 0.300f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.ScrollbarGrabHovered, new System.Numerics.Vector4(0.300f, 0.300f, 0.300f, 1.000f));
+            //ImGuiCol_ScrollbarGrabActive
+            //colors[17] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.ScrollbarGrabActive, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_CheckMark
+            //colors[18] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.CheckMark, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 1.000f));
+            //ImGuiCol_SliderGrab
+            //colors[19] = new System.Numerics.Vector4(0.391f, 0.391f, 0.391f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.SliderGrab, new System.Numerics.Vector4(0.391f, 0.391f, 0.391f, 1.000f));
+            //ImGuiCol_SliderGrabActive
+            //colors[20] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.SliderGrabActive, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_Button
+            //colors[21] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.000f);
+            ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.000f));
+            //ImGuiCol_ButtonHovered
+            //colors[22] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.156f);
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.156f));
+            //ImGuiCol_ButtonActive
+            //colors[23] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.391f);
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.391f));
+            //ImGuiCol_Header
+            //colors[24] = new System.Numerics.Vector4(0.313f, 0.313f, 0.313f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.Header, new System.Numerics.Vector4(0.313f, 0.313f, 0.313f, 1.000f));
+            //ImGuiCol_HeaderHovered
+            //colors[25] = new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f));
+            //ImGuiCol_HeaderActive
+            //colors[26] = new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.HeaderActive, new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f));
+            //ImGuiCol_Separator
+            //colors[27] = new System.Numerics.Vector4(0.266f, 0.266f, 0.266f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.Separator, new System.Numerics.Vector4(0.266f, 0.266f, 0.266f, 1.000f));
+            //ImGuiCol_SeparatorHovered
+            //colors[28] = new System.Numerics.Vector4(0.391f, 0.391f, 0.391f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.SeparatorHovered, new System.Numerics.Vector4(0.391f, 0.391f, 0.391f, 1.000f));
+            //ImGuiCol_SeparatorActive
+            //colors[29] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.SeparatorActive, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_ResizeGrip
+            //colors[30] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.250f);
+            ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.250f));
+            //ImGuiCol_ResizeGripHovered
+            //colors[31] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.670f);
+            ImGui.PushStyleColor(ImGuiCol.ResizeGripHovered, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.670f));
+            //ImGuiCol_ResizeGripActive
+            //colors[32] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.ResizeGripActive, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_Tab
+            //colors[33] = new System.Numerics.Vector4(0.098f, 0.098f, 0.098f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.Tab, new System.Numerics.Vector4(0.098f, 0.098f, 0.098f, 1.000f));
+            //ImGuiCol_TabHovered
+            //colors[34] = new System.Numerics.Vector4(0.352f, 0.352f, 0.352f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TabHovered, new System.Numerics.Vector4(0.352f, 0.352f, 0.352f, 1.000f));
+            //ImGuiCol_TabActive
+            //colors[35] = new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TabActive, new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f));
+            //ImGuiCol_TabUnfocused
+            //colors[36] = new System.Numerics.Vector4(0.098f, 0.098f, 0.098f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TabUnfocused, new System.Numerics.Vector4(0.098f, 0.098f, 0.098f, 1.000f));
+            //ImGuiCol_TabUnfocusedActive
+            //colors[37] = new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.TabUnfocusedActive, new System.Numerics.Vector4(0.195f, 0.195f, 0.195f, 1.000f));
+
+            //ImGuiCol_DockingPreview
+            //colors[38] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 0.781f);
+
+            //ImGuiCol_DockingEmptyBg
+            //colors[39] = new System.Numerics.Vector4(0.180f, 0.180f, 0.180f, 1.000f);
+
+            //ImGuiCol_PlotLines
+            //colors[40] = new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.PlotLines, new System.Numerics.Vector4(0.469f, 0.469f, 0.469f, 1.000f));
+            //ImGuiCol_PlotLinesHovered
+            //colors[41] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.PlotLinesHovered, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_PlotHistogram
+            //colors[42] = new System.Numerics.Vector4(0.586f, 0.586f, 0.586f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new System.Numerics.Vector4(0.586f, 0.586f, 0.586f, 1.000f));
+            //ImGuiCol_PlotHistogramHovered
+            //colors[43] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogramHovered, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_TextSelectedBg
+            //colors[44] = new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.156f);
+            ImGui.PushStyleColor(ImGuiCol.TextSelectedBg, new System.Numerics.Vector4(1.000f, 1.000f, 1.000f, 0.156f));
+            //ImGuiCol_DragDropTarget
+            //colors[45] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.DragDropTarget, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_NavHighlight
+            //colors[46] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.NavHighlight, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_NavWindowingHighlight
+            //colors[47] = new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
+            ImGui.PushStyleColor(ImGuiCol.NavWindowingHighlight, new System.Numerics.Vector4(1.000f, 0.391f, 0.000f, 1.000f));
+            //ImGuiCol_NavWindowingDimBg
+            //colors[48] = new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.586f);
+            ImGui.PushStyleColor(ImGuiCol.NavWindowingDimBg, new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.586f));
+            //ImGuiCol_ModalWindowDimBg
+            //colors[49] = new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.586f);
+            ImGui.PushStyleColor(ImGuiCol.ModalWindowDimBg, new System.Numerics.Vector4(0.000f, 0.000f, 0.000f, 0.586f));
+
+            style.ChildRounding = 4.0f;
+            style.FrameBorderSize = 1.0f;
+            style.FrameRounding = 2.0f;
+            style.GrabMinSize = 7.0f;
+            style.PopupRounding = 2.0f;
+            style.ScrollbarRounding = 12.0f;
+            style.ScrollbarSize = 13.0f;
+            style.TabBorderSize = 1.0f;
+            style.TabRounding = 0.0f;
+            style.WindowRounding = 4.0f;
+
         }
     }
 }

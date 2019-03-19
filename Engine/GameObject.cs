@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Xna.Framework;
-using Shared.Engine;
 
 namespace MgCoreEditor.Engine
 {

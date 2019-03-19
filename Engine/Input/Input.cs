@@ -1,10 +1,9 @@
 ﻿using System;
-using MgCoreEditor.Engine;
 using MgCoreEditor.Settings;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace Shared.Engine.Input
+namespace MgCoreEditor.Engine.Input
 {
     public static class Input
     {
@@ -12,7 +11,7 @@ namespace Shared.Engine.Input
         public static MouseState mouseState, mouseLastState;
 
 
-        public static void Update(GameTime gameTime, Camera camera)
+        public static void Update(GameTime gameTime, IEditorCamera camera)
         {
             mouseLastState = mouseState;
             keyboardLastState = keyboardState;
@@ -23,14 +22,14 @@ namespace Shared.Engine.Input
             MouseEvents(camera);
         }
 
-        private static void MouseEvents(Camera camera)
+        private static void MouseEvents(IEditorCamera perspectiveCamera)
         {
             float mouseAmount = 0.01f;
 
-            Vector3 direction = camera.Forward;
+            Vector3 direction = perspectiveCamera.Forward;
             direction.Normalize();
 
-            Vector3 normal = Vector3.Cross(direction, camera.Up);
+            Vector3 normal = Vector3.Cross(direction, perspectiveCamera.Up);
 
             if (mouseState.RightButton == ButtonState.Pressed)
             {
@@ -40,10 +39,10 @@ namespace Shared.Engine.Input
                 y *= GameSettings.g_screenheight / 800.0f;
                 x *= GameSettings.g_screenwidth / 1280.0f;
 
-                camera.Forward += x * mouseAmount * normal;
+                perspectiveCamera.Forward += x * mouseAmount * normal;
 
-                camera.Forward -= y * mouseAmount * camera.Up;
-                camera.Forward.Normalize();
+                perspectiveCamera.Forward -= y * mouseAmount * perspectiveCamera.Up;
+                perspectiveCamera.Forward.Normalize();
             }
 
         }
@@ -58,16 +57,16 @@ namespace Shared.Engine.Input
             return new Vector2((float)mouseState.X / GameSettings.g_screenwidth, (float)mouseState.Y / GameSettings.g_screenheight);
         }
 
-        private static void KeyboardEvents(GameTime gameTime, Camera camera)
+        private static void KeyboardEvents(GameTime gameTime, IEditorCamera perspectiveCamera)
         {
             //if (DebugScreen.ConsoleOpen) return;
 
             float delta = (float)gameTime.ElapsedGameTime.TotalMilliseconds * 60 / 1000;
 
-            Vector3 direction = camera.Forward;
+            Vector3 direction = perspectiveCamera.Forward;
             direction.Normalize();
 
-            Vector3 normal = Vector3.Cross(direction, camera.Up);
+            Vector3 normal = Vector3.Cross(direction, perspectiveCamera.Up);
 
             float amount = 0.8f * delta;
 
@@ -75,22 +74,22 @@ namespace Shared.Engine.Input
 
             if (keyboardState.IsKeyDown(Keys.W))
             {
-                camera.Position += direction * amount;
+                perspectiveCamera.Transform.Position += direction * amount;
             }
 
             if (keyboardState.IsKeyDown(Keys.S))
             {
-                camera.Position -= direction * amount;
+                perspectiveCamera.Transform.Position -= direction * amount;
             }
 
             if (keyboardState.IsKeyDown(Keys.D))
             {
-                camera.Position += normal * amountNormal;
+                perspectiveCamera.Transform.Position += normal * amountNormal;
             }
 
             if (keyboardState.IsKeyDown(Keys.A))
             {
-                camera.Position -= normal * amountNormal;
+                perspectiveCamera.Transform.Position -= normal * amountNormal;
             }
         }
 

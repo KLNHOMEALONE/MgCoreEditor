@@ -3,39 +3,20 @@ using Microsoft.Xna.Framework;
 
 namespace MgCoreEditor.Engine
 {
-    public class Camera
+    public class PerspectiveCamera : IEditorCamera
     {
-        private Vector3 _position;
         private Vector3 _up = Vector3.Up; //Vector3.UnitZ;
         private Vector3 _forward =  Vector3.Forward; //Vector3.Up;
         private float _fieldOfView = (float)Math.PI / 4;
 
-        public bool HasChanged = true;
-        public bool HasMoved;
-
-        public Camera(Vector3 position, Vector3 lookAt)
+        public PerspectiveCamera(Vector3 position, Vector3 lookAt)
         {
-            _position = position;
-            _forward = lookAt - position;
+            Transform = new Transform {Position = position};
+            _forward = lookAt - Transform.Position;
             _forward.Normalize();
         }
 
-        public Vector3 Position
-        {
-            get
-            {
-                return _position;
-            }
-            set
-            {
-                if (_position != value)
-                {
-                    _position = value;
-                    HasChanged = true;
-                    HasMoved = true;
-                }
-            }
-        }
+        public Transform Transform { get; set; }
 
         public Vector3 Up
         {
@@ -48,7 +29,7 @@ namespace MgCoreEditor.Engine
                 if (_up != value)
                 {
                     _up = value;
-                    HasChanged = true;
+                    Transform.HasChanged = true;
                 }
             }
         }
@@ -64,7 +45,7 @@ namespace MgCoreEditor.Engine
                 if (_forward != value)
                 {
                     _forward = value;
-                    HasChanged = true;
+                    Transform.HasChanged = true;
                 }
             }
         }
@@ -75,16 +56,16 @@ namespace MgCoreEditor.Engine
             set
             {
                 _fieldOfView = value;
-                HasChanged = true;
+                Transform.HasChanged = true;
             }
         }
 
         public Vector3 Lookat
         {
-            get { return Position + Forward; }
+            get { return Transform.Position + Forward; }
             set
             {
-                Forward = value - Position;
+                Forward = value - Transform.Position;
                 Forward.Normalize();
             }
         }

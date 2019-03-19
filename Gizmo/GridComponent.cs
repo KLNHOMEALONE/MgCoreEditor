@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using MgCoreEditor.Engine;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
-using Shared.Engine;
 
 namespace XNA3DGizmoExample
 {

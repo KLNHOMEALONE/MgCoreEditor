@@ -21,7 +21,6 @@
 #define USE_NAME
 
 using Microsoft.Xna.Framework;
-using Shared.Engine;
 
 namespace MgCoreEditor.Engine
 {

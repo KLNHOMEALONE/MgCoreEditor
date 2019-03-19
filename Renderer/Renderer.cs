@@ -6,8 +6,8 @@ namespace MgCoreEditor.Renderer
 {
     public class Renderer
     {
-        //Camera
-        private Camera _camera;
+        //PerspectiveCamera
+        private IEditorCamera _perspectiveCamera;
 
         //Projection Matrices and derivates used in shaders
         private Matrix _view;
@@ -24,9 +24,9 @@ namespace MgCoreEditor.Renderer
         private bool _viewProjectionHasChanged;
         private Vector3 _inverseResolution;
 
-        public Renderer(Camera camera)
+        public Renderer(IEditorCamera perspectiveCamera)
         {
-            _camera = camera;
+            _perspectiveCamera = perspectiveCamera;
         }
 
         public void Update(GameTime gameTime)
@@ -44,7 +44,7 @@ namespace MgCoreEditor.Renderer
             get { return _projection; }
         }
 
-        //Update our view projection matrices if the camera moved
+        //Update our view projection matrices if the perspectiveCamera moved
         /// <summary>
         /// Create the projection matrices
         /// </summary>
@@ -53,26 +53,26 @@ namespace MgCoreEditor.Renderer
         /// <param name="entities"></param>
         private void UpdateViewProjection()
         {
-            _viewProjectionHasChanged = _camera.HasChanged;
+            _viewProjectionHasChanged = _perspectiveCamera.Transform.HasChanged;
 
 
-            //If the camera didn't do anything we don't need to update this stuff
+            //If the perspectiveCamera didn't do anything we don't need to update this stuff
             if (_viewProjectionHasChanged)
             {
                 //We have processed the change, now setup for next frame as false
-                _camera.HasChanged = false;
-                _camera.HasMoved = false;
+                _perspectiveCamera.Transform.HasChanged = false;
+                _perspectiveCamera.Transform.HasMoved = false;
 
                 //View matrix
-                _view = Matrix.CreateLookAt(_camera.Position, _camera.Lookat, _camera.Up);
+                _view = Matrix.CreateLookAt(_perspectiveCamera.Transform.Position, _perspectiveCamera.Lookat, _perspectiveCamera.Up);
                 _inverseView = Matrix.Invert(_view);
                 _viewIT = Matrix.Transpose(_inverseView);
 
 
-                _projection = Matrix.CreatePerspectiveFieldOfView(_camera.FieldOfView,
+                _projection = Matrix.CreatePerspectiveFieldOfView(_perspectiveCamera.FieldOfView,
                     GameSettings.g_screenwidth / (float)GameSettings.g_screenheight, GameSettings.g_nearPlane, GameSettings.g_farplane);
 
-                //_gBufferRenderModule.Camera = _camera.Position;
+                //_gBufferRenderModule.PerspectiveCamera = _perspectiveCamera.Position;
 
                 _viewProjection = _view * _projection;
 
