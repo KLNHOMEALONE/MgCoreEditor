@@ -41,9 +41,17 @@ namespace MgCoreEditor
         private Num.Vector3 clear_color = new Num.Vector3(114f / 255f, 144f / 255f, 154f / 255f);
         private byte[] _textBuffer = new byte[100];
 
+        private Model _cube;
+        private Effect _specularEffect;
+        private Texture2D _cubeDiffuse;
+
+        private Vector3 _modelPosition = Vector3.Zero;
+
+        private Vector3 DiffDir = Vector3.Left;
+
         public Game1()
         {
-            _graphics = new GraphicsDeviceManager(this);
+            _graphics = new GraphicsDeviceManager(this){GraphicsProfile = GraphicsProfile.HiDef};
             _graphics.PreferredBackBufferWidth = 1600;
             _graphics.PreferredBackBufferHeight = 900;
             _graphics.PreferMultiSampling = true;
@@ -77,6 +85,13 @@ namespace MgCoreEditor
 
             // Then, bind it to an ImGui-friendly pointer, that we can use during regular ImGui.** calls (see below)
             _imGuiTexture = _imGuiRenderer.BindTexture(_xnaTexture);
+
+            _cube = Content.Load<Model>("models/Cube_obj");
+            //_cube = Content.Load<Model>("models/xbot");
+            _cubeDiffuse = Content.Load<Texture2D>("textures/Cube_diffuse");
+            _specularEffect = Content.Load<Effect>("effects/Specular");
+
+            //SetupAmbientEffect();
         }
 
         protected override void Update(GameTime gameTime)
@@ -100,6 +115,16 @@ namespace MgCoreEditor
 
             _grid.Draw();
 
+            // Draw model
+            DrawModel();
+
+            //var effect = (BasicEffect)meshPart.Effect;
+            //effect.EnableDefaultLighting();
+            //effect.PreferPerPixelLighting = true;
+            //effect.World = transforms[mesh.ParentBone.Index] * wworld;
+            //effect.View = _renderer.View;
+            //effect.Projection = _renderer.Projection;
+
             //spriteBatch.Begin();
             //spriteBatch.Draw(_icon, Vector2.Zero);
             //spriteBatch.End();
@@ -117,6 +142,52 @@ namespace MgCoreEditor
             base.Draw(gameTime);
         }
 
+        private void DrawModel()
+        {
+            Matrix[] transforms = new Matrix[_cube.Bones.Count];
+            _cube.CopyAbsoluteBoneTransformsTo(transforms);
+
+            var viewVector = Camera.Forward;
+            viewVector.Normalize();
+
+            Matrix wworld = GetWorld(0.05f, _modelPosition);
+
+            _specularEffect.Parameters["AmbientColor"].SetValue(Color.Yellow.ToVector4());
+            _specularEffect.Parameters["AmbientIntensity"].SetValue(0.75f);
+            _specularEffect.Parameters["SpecularColor"].SetValue(Color.Yellow.ToVector4());
+            _specularEffect.Parameters["SpecularIntensity"].SetValue(0.1f);
+            _specularEffect.Parameters["DiffuseLightDirection"].SetValue(DiffDir);
+            _specularEffect.Parameters["DiffuseColor"].SetValue(Color.Red.ToVector4());
+            _specularEffect.Parameters["DiffuseIntensity"].SetValue(0.1f);
+
+            foreach (var mesh in _cube.Meshes)
+            {
+                foreach (var meshPart in mesh.MeshParts)
+                {
+                    //meshPart.Effect = _specularEffect;
+                    _specularEffect.Parameters["World"].SetValue(transforms[mesh.ParentBone.Index] * wworld);
+                    _specularEffect.Parameters["View"].SetValue(_renderer.View);
+                    _specularEffect.Parameters["Projection"].SetValue(_renderer.Projection);
+
+                    _specularEffect.Parameters["ViewVector"].SetValue(Camera.Forward);
+                    Matrix worldInverseTransposeMatrix = Matrix.Transpose(Matrix.Invert(mesh.ParentBone.Transform * wworld));
+                    _specularEffect.Parameters["WorldInverseTranspose"].SetValue(worldInverseTransposeMatrix);
+
+                    GraphicsDevice.SetVertexBuffer(meshPart.VertexBuffer, meshPart.VertexOffset);
+                    GraphicsDevice.Indices = meshPart.IndexBuffer;
+                    _specularEffect.CurrentTechnique.Passes[0].Apply();
+                    GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, meshPart.StartIndex, meshPart.PrimitiveCount);
+                }
+                //mesh.Draw();
+            }
+        }
+
+        public virtual Matrix GetWorld(float scale, Vector3 position)
+        {
+            var world = Matrix.Identity;
+            Matrix.CreateTranslation(position);
+            return Matrix.CreateScale(scale) * Matrix.CreateFromAxisAngle(Vector3.Up, MathHelper.ToRadians(180)  )  * world;
+        }
 
         protected virtual void ImGuiLayout()
         {

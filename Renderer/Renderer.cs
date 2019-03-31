@@ -44,6 +44,11 @@ namespace MgCoreEditor.Renderer
             get { return _projection; }
         }
 
+        public Matrix ViewProjection
+        {
+            get { return _viewProjection; }
+        }
+
         //Update our view projection matrices if the perspectiveCamera moved
         /// <summary>
         /// Create the projection matrices

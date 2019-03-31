@@ -7,7 +7,7 @@ namespace MgCoreEditor.Engine
     {
         private Vector3 _up = Vector3.Up; //Vector3.UnitZ;
         private Vector3 _forward =  Vector3.Forward; //Vector3.Up;
-        private float _fieldOfView = (float)Math.PI / 4;
+        private float _fieldOfView = MathHelper.ToRadians(75);// (float)Math.PI / 4;
 
         public PerspectiveCamera(Vector3 position, Vector3 lookAt)
         {
